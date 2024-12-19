@@ -1,5 +1,4 @@
 # 왜 Mysql 인가 ?
----
 ## 1. 여전히 사용량이 높은 RDB
 
 DB 엔진 랭킹 사이트 : https://db-engines.com/en/ranking
