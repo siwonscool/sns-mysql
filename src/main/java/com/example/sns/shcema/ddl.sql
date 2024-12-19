@@ -1,3 +1,5 @@
+create database sns;
+
 create table Member
 (
     id int auto_increment,
