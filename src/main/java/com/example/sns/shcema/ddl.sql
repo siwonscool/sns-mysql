@@ -52,5 +52,25 @@ create index POST__index_member_id
 create index POST__index_created_date
     on POST (createdDate);
 
+create index POST__index_member_id_create_Date
+    on POST (memberId, createdDate);
 
 
+SELECT COUNT(*) AS count
+FROM Post
+WHERE memberId = 3
+  AND createdDate BETWEEN "1900-01-01" AND "2023-12-31";
+
+explain SELECT memberId, createdDate, COUNT(*) AS count
+        FROM Post use index (POST__index_member_id_create_Date)
+        WHERE memberId = 5
+          AND createdDate BETWEEN "1900-01-01" AND "2023-12-31"
+        GROUP BY memberId, createdDate;
+
+select memberId,count(id)
+from Post
+group by memberId ;
+
+select Post.createdDate, count(id)
+from Post
+group by  createdDate ;

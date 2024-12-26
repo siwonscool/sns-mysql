@@ -16,7 +16,6 @@ public class PostReadService {
     public List<DailyPostCountResponse> getDailyPostCount(DailyPostCountRequest request){
         /*
         * 반환값 ->  리스트 [작성일자, 작성회원, 작성 게시물 횟수]
-        *
         * */
 
         return postRepository.groupByCreatedDate(request);

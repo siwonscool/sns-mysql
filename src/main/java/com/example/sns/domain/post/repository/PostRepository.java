@@ -30,11 +30,13 @@ public class PostRepository {
     );
 
     public List<DailyPostCountResponse> groupByCreatedDate(DailyPostCountRequest request){
-        var sql = String.format("SELECT memberId, createdDate, COUNT(*) AS count " +
-                "FROM %s " +
-                "WHERE memberId = :memberId " +
-                "AND createdDate BETWEEN :start AND :end " +
-                "GROUP BY memberId, createdDate", TABLE);
+        var sql = String.format("""
+                SELECT memberId, createdDate, COUNT(*) AS count
+                FROM %s
+                WHERE memberId = :memberId
+                AND createdDate BETWEEN :start AND :end
+                GROUP BY memberId, createdDate
+                """, TABLE);
 
         var param = new BeanPropertySqlParameterSource(request);
         return jdbcTemplate.query(sql, param, DAILY_POST_COUNT_MAPPER);
@@ -47,6 +49,20 @@ public class PostRepository {
         }
 
         throw new UnsupportedOperationException("post 는 갱신을 지원하지 않습니다");
+    }
+
+    public void bulkInsert(List<Post> posts){
+        var sql = String.format("""
+                INSERT INTO %s (memberId, contents, createdDate, createdAt)
+                VALUES (:memberId, :contents, :createdDate, :createdAt)
+                """, TABLE);
+
+        SqlParameterSource[] params = posts
+                .stream()
+                .map(BeanPropertySqlParameterSource::new)
+                .toArray(SqlParameterSource[]::new);
+
+        jdbcTemplate.batchUpdate(sql, params);
     }
 
     private Post insert(Post post){
