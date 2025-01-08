@@ -74,3 +74,16 @@ group by memberId ;
 select Post.createdDate, count(id)
 from Post
 group by  createdDate ;
+
+create table Timeline
+(
+    id int auto_increment,
+    memberId int not null,
+    postId int not null,
+    createdAt datetime not null,
+    constraint Timeline_id_uindex primary key (id)
+);
+
+select * from Timeline;
+
+select * from Follow;

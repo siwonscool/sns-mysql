@@ -21,7 +21,7 @@ public class GetFollowingMemberUsecase {
         * 1. follower memberList 조회
         * 2. 1번의 조회결과로 사용자 정보를 조회한다
         * */
-        var followings = followReadService.getFollowList(memberId);
+        var followings = followReadService.getFollowings(memberId);
         return memberReadService.getMemberList(followings.stream().map(Follow::getToMemberId).toList());
     }
 }

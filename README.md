@@ -188,4 +188,64 @@ mysql 의 PK 로 2가지 방법이 존재한다
 - 커버링 인덱스도 페이지네이션 부하를 줄일 수 있는 하나의 방법
 - 문제가되는 count 쿼리를 최적화 하는 방법도 존재한다
 
+### 커버링 인덱스
+- 검색조건이 인덱스에 부합하다면, 테이블에 바로 접근하는 것보다 인덱스를 통해 접근하는 것이 빠르다
+- 커버링 인덱스란 테이블에 접근하지않고 인덱스로만 데이터 응답을 내려줄 수 있게하는것
+- 인덱싱 되어있는 컬럼을 where, group by 절의 컬럼, select 컬럼에 추가하여 커버링 인덱스가 작용하게 만들고,
+- order by, offset, limit 절로 인한 불필요한 데이터 블록 접근을 커버링 인덱스를 통해 최소화 시킬 수 있다
 
+## 6. 타임라인 최적화
+타임라인 : 트위터, 페이스북, 인스타그램 등 SNS 에서 팔로워들의 게시물을 보여주는 피드 
+
+1. Push 모델 (Fanout on write)
+- 읽기 모델에 이점을 얻기위한 모델
+- 타임라인 실시간 데이터 조회에 이점을 얻기 위해 Follow 테이블과 Post 테이블을 따로 조회하지 않고, 두 PK 를 포함한 Timeline 테이블을 별도로 생성
+- 단점은 Follower 가 많은 유저인 경우 게시물 작성하는데 (쓰기비용) 많은 비용이 소모된다
+
+2. Pull 모델 (Fanout on Read)
+- 쓰기 비용에 이점을 얻기위한 모델
+- Follow 테이블과 Post 테이블을 별도로 두어 게시물이 작성될때 Post 테이블에만 write 한다
+- 단점은 Follower 가 많은 유저인 경우 타임라인 게시물을 조회하는데 (읽기비용) 많은 비용이 소모된다
+
+결론 : 타임라인에 중요도를 얼마나 가져가느냐에 따라 Follower 수를 기준으로 Push 모델 Pull 모델을 결정한다
+
+
+## 7. 트랜젝션
+
+1. ACID
+- Atomic 
+  - 트랜잭션은 무조건 성공하거나 무조건 실패하는 원자적 연산을 보장 (All or Nothing)
+  - 이는 mysql 의 MVCC 패턴 즉, Undo log 에 저장되어 연산을 보장한다
+  - 트랜잭션이 시작하면 Undo log 에 원본 데이터를 저장하고 트랜잭션이 마쳐도 바로 삭제되지 않는다
+  - 해당 트랜잭션보다 앞전에 실행된 트랜잭션이 원본 데이터를 바라보는 상황이 있을 수 있기 때문
+- Consistency
+  - 트랜잭션이 종료되었을 때 데이터 무결성을 보장한다
+  - 제약조건을 통해 (유니크 제약, 외래키 제약 등)
+- Isolation 
+  - 트렌잭션은 서로 간섭하지 않고 독립적으로 동작한다
+  - 하지만 동시성에대한 많은 성능을 포기해야해서 개발자가 제어가 가능하다
+  - 트랜잭션 격리레별(via MVCC)을 통해 제어한다
+- Durability
+  - 완료된 트랜잭션을 유실하지 않는다
+  - WAL 을 통해 (random 한 Disk I/O 를 줄이기 위해 메모리에 먼저 쓰는데 메모리가 유실되는 상황을 해소하기 위해 사용하는 순차적 I/O)
+
+2. Spring @Transactional
+- 스프링에서 동작하는 Transactional 이 동작하는 방식 propagation 에대한 정리 (https://mangkyu.tistory.com/269)
+- 물리 트랜잭션을 하나로 논리트랜잭션을 별도로 가져가느냐 (default = REQUIRED)
+- 물리 트랜잭션, 논리트랜잭션 을 하나로 묶어서 가져가느냐 (REQUIRED_NEW)
+
+
+3. Isolation level
+- 이상현상 종류
+- Dirty Read
+  - Update 가 진행중인 트랜잭션 A 가 실패, 해당 데이터를 읽는 트랜잭션 B 는 실패한 트랜잭션 A 의 값을 읽어옴
+- Non Repeatable Read
+  - Select 가 여러번 진행중인 트랜잭션 A, Update 를 하는 트랜잭션 B 가 실행되며 A 트랜잭션에 여러번 읽을때 데이터가 다르게 조회
+- Phantom Read
+  - Select 로 범위 탐색을 여러번 진행중인 트랜잭션 B, Update 를 하는 트랜잭션 B 가 실행되며 A 트랜잭션이 여러번 읽을때 데이터가 다르게 조회
+
+![Isolation level](README_IMG/isolation.png)
+- 아래로 갈수록 이상현상이 없지만 동시성 처리량 성능에 좋지않다
+- Read Uncommitted 와 Serializable Read 는 거의 사용하지 않는다
+- Repeatable Read 의 경우 Get lock 이 발생하여 Dead lock 이 발생할 수 도 있다
+- 트랜잭션이 실패할경우만 트랜잭션을 보장하는 Read Committed 를 주로 사용한다
